@@ -13,12 +13,16 @@ final class GameViewController: UIViewController {
     private let powerButton = UIButton(type: .system)
     private let autoButton = UIButton(type: .system)
     private let bonusButton = UIButton(type: .system)
+    private let prestigeButton = UIButton(type: .system)
 
     private let defaults = UserDefaults.standard
-    private let damageNeeded = 100
     private var damage = 0
     private var coins = 0
     private var tornAces = 0
+    private var lifetimeAces = 0
+    private var prestige = 0
+    private var damageNeeded: Int { 100 + (lifetimeAces / 10) * 25 }
+    private var coinMultiplier: Int { 1 + prestige / 2 }
     private var tapPower = 1
     private var autoPower = 0
     private var tearBonus = 0
@@ -76,6 +80,8 @@ final class GameViewController: UIViewController {
         powerButton.addTarget(self, action: #selector(buyPower), for: .touchUpInside)
         autoButton.addTarget(self, action: #selector(buyAuto), for: .touchUpInside)
         bonusButton.addTarget(self, action: #selector(buyBonus), for: .touchUpInside)
+        configureButton(prestigeButton, title: "", color: UIColor(red: 0.55, green: 0.32, blue: 0.18, alpha: 1), size: 15)
+        prestigeButton.addTarget(self, action: #selector.performPrestige), for: .touchUpInside)
 
         statsLabel.font = .systemFont(ofSize: 15, weight: .medium)
         statsLabel.textColor = .white
@@ -91,7 +97,7 @@ final class GameViewController: UIViewController {
         let stack = UIStackView(arrangedSubviews: [
             titleLabel, subtitleLabel, coinsLabel, levelLabel, cardView,
             progressView, tearButton, shopTitle, powerButton, autoButton,
-            bonusButton, statsLabel, achievementLabel
+            bonusButton, prestigeButton, statsLabel, achievementLabel
         ])
         stack.axis = .vertical
         stack.alignment = .fill
@@ -119,7 +125,8 @@ final class GameViewController: UIViewController {
             tearButton.heightAnchor.constraint(equalToConstant: 55),
             powerButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 54),
             autoButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 54),
-            bonusButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 54)
+            bonusButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 54),
+            prestigeButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 58)
         ])
     }
 
@@ -146,7 +153,7 @@ final class GameViewController: UIViewController {
     @objc private func tear() {
         guard damage < damageNeeded else { return }
         damage = min(damageNeeded, damage + tapPower)
-        coins += tapPower
+        coins += tapPower * coinMultiplier
         cardView.setDamage(damage: damage, total: damageNeeded)
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         if damage == damageNeeded { finishAce() }
@@ -156,7 +163,7 @@ final class GameViewController: UIViewController {
     private func applyAutoDamage() {
         guard autoPower > 0, damage < damageNeeded else { return }
         damage = min(damageNeeded, damage + autoPower)
-        coins += autoPower
+        coins += autoPower * coinMultiplier
         cardView.setDamage(damage: damage, total: damageNeeded)
         if damage == damageNeeded { finishAce() }
         updateInterface()
@@ -164,7 +171,8 @@ final class GameViewController: UIViewController {
 
     private func finishAce() {
         tornAces += 1
-        coins += 25 + tearBonus * 10
+        lifetimeAces += 1
+        coins += (25 + tearBonus * 10) * coinMultiplier
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         cardView.tearApart { [weak self] in
             guard let self = self else { return }
@@ -192,6 +200,20 @@ final class GameViewController: UIViewController {
         saveProgress()
     }
 
+    @objc private func performPrestige() {
+        guard tornAces >= 10 else { return }
+        prestige += 1
+        coins = 0
+        tornAces = 0
+        tapPower = 1
+        autoPower = 0
+        tearBonus = 0
+        damage = 0
+        cardView.resetCard()
+        updateInterface()
+        saveProgress()
+    }
+
     @objc private func buyBonus() {
         let cost = bonusCost
         guard coins >= cost else { return }
@@ -214,11 +236,13 @@ final class GameViewController: UIViewController {
         powerButton.setTitle("💪 Сила клика: \(tapPower) → \(tapPower + 1)\nЦена: \(powerCost) монет", for: .normal)
         autoButton.setTitle("⚙️ Авто-надрыв: \(autoPower) в секунду\nЦена: \(autoCost) монет", for: .normal)
         bonusButton.setTitle("🎁 Бонус за туз: +\(tearBonus * 10) монет\nУлучшить за: \(bonusCost) монет", for: .normal)
-        statsLabel.text = "Прочность карты: \(damage) / \(damageNeeded)\nСила клика: \(tapPower)  •  Авто-сила: \(autoPower)/сек"
+        prestigeButton.setTitle("♻️ ПРЕСТИЖ: \(prestige)  •  Доход x\(coinMultiplier)\nСбросить улучшения за 10 тузов текущего забега", for: .normal)
+        statsLabel.text = "Прочность карты: \(damage) / \(damageNeeded)\nСила клика: \(tapPower)  •  Авто-сила: \(autoPower)/сек\nВсего порвано: \(lifetimeAces)  •  Престиж: \(prestige)"
         achievementLabel.text = achievementText()
         let canPower = coins >= powerCost
         let canAuto = coins >= autoCost
         let canBonus = coins >= bonusCost
+        prestigeButton.alpha = tornAces >= 10 ? 1 : 0.55
         powerButton.alpha = canPower ? 1 : 0.65
         autoButton.alpha = canAuto ? 1 : 0.65
         bonusButton.alpha = canBonus ? 1 : 0.65
@@ -237,6 +261,8 @@ final class GameViewController: UIViewController {
     @objc private func saveProgress() {
         defaults.set(coins, forKey: "coins")
         defaults.set(tornAces, forKey: "tornAces")
+        defaults.set(lifetimeAces, forKey: "lifetimeAces")
+        defaults.set(prestige, forKey: "prestige")
         defaults.set(tapPower, forKey: "tapPower")
         defaults.set(autoPower, forKey: "autoPower")
         defaults.set(tearBonus, forKey: "tearBonus")
@@ -246,6 +272,8 @@ final class GameViewController: UIViewController {
     private func loadProgress() {
         coins = defaults.integer(forKey: "coins")
         tornAces = defaults.integer(forKey: "tornAces")
+        lifetimeAces = defaults.integer(forKey: "lifetimeAces")
+        prestige = defaults.integer(forKey: "prestige")
         tapPower = max(1, defaults.integer(forKey: "tapPower"))
         autoPower = defaults.integer(forKey: "autoPower")
         tearBonus = defaults.integer(forKey: "tearBonus")

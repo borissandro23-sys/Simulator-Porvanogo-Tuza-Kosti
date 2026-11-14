@@ -412,7 +412,7 @@ final class GameViewController: UIViewController {
         let skinNames = ["🔴 Классический стиль • Бесплатно", "🌊 Неоновый стиль • 20 💎", "🟣 Космический стиль • 35 💎"]
         for index in 0..<3 {
             let owned = index == 0 || defaults.bool(forKey: "shopSkin\(index)Owned")
-            skinButtons[index].setTitle("\(skinNames[index])\n\(selectedSkin == index ? "✓ Выбрано" : (owned ? "Выбрать" : "Купить")), for: .normal)
+            skinButtons[index].setTitle("\(skinNames[index])\n\(selectedSkin == index ? "✓ Выбрано" : (owned ? "Выбрать" : "Купить"))", for: .normal)
             skinButtons[index].alpha = selectedSkin == index ? 1 : 0.85
         }
         powerButton.setTitle("💪 Сила клика: \(tapPower) → \(tapPower + 1)\nЦена: \(powerCost) монет", for: .normal)

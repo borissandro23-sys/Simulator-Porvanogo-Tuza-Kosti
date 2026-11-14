@@ -1,5 +1,11 @@
 import UIKit
 
+private struct RunUpgrade {
+    let title: String
+    let detail: String
+    let kind: Int
+}
+
 final class GameViewController: UIViewController {
     private let titleLabel = UILabel()
     private let subtitleLabel = UILabel()
@@ -10,6 +16,9 @@ final class GameViewController: UIViewController {
     private let statsLabel = UILabel()
     private let levelLabel = UILabel()
     private let achievementLabel = UILabel()
+    private let eventLabel = UILabel()
+    private let choiceTitle = UILabel()
+    private let choiceButtons = (0..<3).map { _ in UIButton(type: .system) }
     private let powerButton = UIButton(type: .system)
     private let autoButton = UIButton(type: .system)
     private let bonusButton = UIButton(type: .system)
@@ -21,17 +30,24 @@ final class GameViewController: UIViewController {
     private var tornAces = 0
     private var lifetimeAces = 0
     private var prestige = 0
-    private var damageNeeded: Int { 100 + (lifetimeAces / 10) * 25 }
+    private var damageNeeded: Int { baseDamageNeeded * (isBoss ? 4 : 1) }
+    private var baseDamageNeeded: Int { 100 + (lifetimeAces / 10) * 25 }
     private var coinMultiplier: Int { 1 + prestige }
     private var tapPower = 1
     private var autoPower = 0
     private var tearBonus = 0
+    private var rareBonus = 0
+    private var isBoss = false
+    private var isRare = false
+    private var cardRewardMultiplier = 1
+    private var pendingChoices: [RunUpgrade] = []
     private var autoTimer: Timer?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor(red: 0.07, green: 0.09, blue: 0.14, alpha: 1)
         loadProgress()
+        prepareNextCard()
         buildInterface()
         updateInterface()
         autoTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
@@ -52,7 +68,7 @@ final class GameViewController: UIViewController {
         titleLabel.textAlignment = .center
         titleLabel.numberOfLines = 0
 
-        subtitleLabel.text = "Прокачивай силу и рви тузы быстрее!"
+        subtitleLabel.text = "Бей боссов. Открывай редкие карты. Выбирай свой билд."
         subtitleLabel.font = .systemFont(ofSize: 15, weight: .medium)
         subtitleLabel.textColor = .lightGray
         subtitleLabel.textAlignment = .center
@@ -66,13 +82,31 @@ final class GameViewController: UIViewController {
         levelLabel.textColor = .white
         levelLabel.textAlignment = .center
 
+        eventLabel.font = .systemFont(ofSize: 16, weight: .heavy)
+        eventLabel.textColor = .systemTeal
+        eventLabel.textAlignment = .center
+        eventLabel.numberOfLines = 0
+
+        choiceTitle.text = "🎲 ВЫБЕРИ ОДНО УЛУЧШЕНИЕ"
+        choiceTitle.font = .systemFont(ofSize: 15, weight: .heavy)
+        choiceTitle.textColor = .systemYellow
+        choiceTitle.textAlignment = .center
+
         progressView.progressTintColor = .systemOrange
         progressView.trackTintColor = UIColor.white.withAlphaComponent(0.15)
         progressView.layer.cornerRadius = 5
         progressView.clipsToBounds = true
 
-        configureButton(tearButton, title: "✂️  ПОРВАТЬ ТУЗ", color: .systemOrange, size: 19)
+        configureButton(tearButton, title: "✂️ ПОРВАТЬ ТУЗ", color: .systemOrange, size: 19)
         tearButton.addTarget(self, action: #selector(tear), for: .touchUpInside)
+
+        for (index, button) in choiceButtons.enumerated() {
+            configureButton(button, title: "", color: UIColor(red: 0.30, green: 0.28, blue: 0.55, alpha: 1), size: 14)
+            button.tag = index
+            button.addTarget(self, action: #selector(chooseUpgrade(_:)), for: .touchUpInside)
+            button.isHidden = true
+        }
+        choiceTitle.isHidden = true
 
         configureButton(powerButton, title: "", color: UIColor(red: 0.18, green: 0.38, blue: 0.68, alpha: 1), size: 15)
         configureButton(autoButton, title: "", color: UIColor(red: 0.24, green: 0.48, blue: 0.38, alpha: 1), size: 15)
@@ -93,11 +127,11 @@ final class GameViewController: UIViewController {
         achievementLabel.textAlignment = .center
         achievementLabel.numberOfLines = 0
 
-        let shopTitle = makeSectionTitle("МАГАЗИН УЛУЧШЕНИЙ")
         let stack = UIStackView(arrangedSubviews: [
-            titleLabel, subtitleLabel, coinsLabel, levelLabel, cardView,
-            progressView, tearButton, shopTitle, powerButton, autoButton,
-            bonusButton, prestigeButton, statsLabel, achievementLabel
+            titleLabel, subtitleLabel, coinsLabel, levelLabel, eventLabel, cardView,
+            progressView, tearButton, choiceTitle, choiceButtons[0], choiceButtons[1],
+            choiceButtons[2], makeSectionTitle("МАГАЗИН УЛУЧШЕНИЙ"), powerButton,
+            autoButton, bonusButton, prestigeButton, statsLabel, achievementLabel
         ])
         stack.axis = .vertical
         stack.alignment = .fill
@@ -150,11 +184,20 @@ final class GameViewController: UIViewController {
         button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 12, bottom: 10, right: 12)
     }
 
+    private func prepareNextCard() {
+        isBoss = (lifetimeAces + 1) % 5 == 0
+        isRare = !isBoss && Int.random(in: 1...100) <= min(45, 15 + rareBonus)
+        cardRewardMultiplier = isBoss ? 5 : (isRare ? 3 : 1)
+        let suit = ["♥", "♦", "♣", "♠"].randomElement() ?? "♥"
+        let color: UIColor = (suit == "♥" || suit == "♦") ? .systemRed : .black
+        let name = isBoss ? "БОСС • КОРОЛЬ" : (isRare ? "РЕДКИЙ ТУЗ" : "ТУЗ")
+        cardView.setCard(name: name, suit: suit, color: color)
+    }
+
     @objc private func tear() {
         guard damage < damageNeeded else { return }
         damage = min(damageNeeded, damage + tapPower)
-        coins += tapPower * coinMultiplier
-        cardView.setDamage(damage: damage, total: damageNeeded)
+        coins += tapPower * coinMultiplier * cardRewardMultiplier
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         if damage == damageNeeded { finishAce() }
         updateInterface()
@@ -163,8 +206,7 @@ final class GameViewController: UIViewController {
     private func applyAutoDamage() {
         guard autoPower > 0, damage < damageNeeded else { return }
         damage = min(damageNeeded, damage + autoPower)
-        coins += autoPower * coinMultiplier
-        cardView.setDamage(damage: damage, total: damageNeeded)
+        coins += autoPower * coinMultiplier * cardRewardMultiplier
         if damage == damageNeeded { finishAce() }
         updateInterface()
     }
@@ -172,32 +214,71 @@ final class GameViewController: UIViewController {
     private func finishAce() {
         tornAces += 1
         lifetimeAces += 1
-        coins += (25 + tearBonus * 10) * coinMultiplier
+        coins += (25 + tearBonus * 10) * coinMultiplier * cardRewardMultiplier
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+        if isBoss {
+            coins += 250 * coinMultiplier
+            eventLabel.text = "👑 БОСС ПОВЕРЖЕН! +250 монет"
+        } else if isRare {
+            eventLabel.text = "✨ РЕДКАЯ КАРТА! Награда x3"
+        } else {
+            eventLabel.text = "Туз разорван. Следующая карта уже ждёт!"
+        }
+        if lifetimeAces % 3 == 0 { showUpgradeChoices() }
         cardView.tearApart { [weak self] in
             guard let self = self else { return }
             self.damage = 0
+            self.prepareNextCard()
             self.cardView.resetCard()
             self.updateInterface()
         }
     }
 
-    @objc private func buyPower() {
-        let cost = powerCost
-        guard coins >= cost else { return }
-        coins -= cost
-        tapPower += 1
+    private func showUpgradeChoices() {
+        let all = [
+            RunUpgrade(title: "💥 Сильный удар", detail: "+2 к силе клика", kind: 0),
+            RunUpgrade(title: "🤖 Механический палец", detail: "+1 авто-надрыв/сек", kind: 1),
+            RunUpgrade(title: "🍀 Охота за редкостями", detail: "+10% шанс редкой карты", kind: 2),
+            RunUpgrade(title: "💰 Золотая пыль", detail: "+1 монета за силу клика", kind: 3)
+        ]
+        pendingChoices = Array(all.shuffled().prefix(3))
+        choiceTitle.isHidden = false
+        for index in 0..<3 {
+            let option = pendingChoices[index]
+            choiceButtons[index].setTitle("\(option.title)\n\(option.detail)", for: .normal)
+            choiceButtons[index].isHidden = false
+        }
+    }
+
+    @objc private func chooseUpgrade(_ sender: UIButton) {
+        guard pendingChoices.indices.contains(sender.tag) else { return }
+        let selected = pendingChoices[sender.tag]
+        switch selected.kind {
+        case 0: tapPower += 2
+        case 1: autoPower += 1
+        case 2: rareBonus = min(30, rareBonus + 10)
+        default: tearBonus += 1
+        }
+        pendingChoices.removeAll()
+        choiceTitle.isHidden = true
+        choiceButtons.forEach { $0.isHidden = true }
+        eventLabel.text = "Улучшение получено: \(selected.title)"
         updateInterface()
         saveProgress()
     }
 
+    @objc private func buyPower() {
+        guard coins >= powerCost else { return }
+        coins -= powerCost
+        tapPower += 1
+        updateInterface()
+    }
+
     @objc private func buyAuto() {
-        let cost = autoCost
-        guard coins >= cost else { return }
-        coins -= cost
+        guard coins >= autoCost else { return }
+        coins -= autoCost
         autoPower += 1
         updateInterface()
-        saveProgress()
     }
 
     @objc private func performPrestige() {
@@ -208,19 +289,18 @@ final class GameViewController: UIViewController {
         tapPower = 1
         autoPower = 0
         tearBonus = 0
+        rareBonus = 0
         damage = 0
+        prepareNextCard()
         cardView.resetCard()
         updateInterface()
-        saveProgress()
     }
 
     @objc private func buyBonus() {
-        let cost = bonusCost
-        guard coins >= cost else { return }
-        coins -= cost
+        guard coins >= bonusCost else { return }
+        coins -= bonusCost
         tearBonus += 1
         updateInterface()
-        saveProgress()
     }
 
     private var powerCost: Int { Int(ceil(25 * pow(1.55, Double(tapPower - 1)))) }
@@ -228,33 +308,37 @@ final class GameViewController: UIViewController {
     private var bonusCost: Int { Int(ceil(40 * pow(1.65, Double(tearBonus)))) }
 
     private func updateInterface() {
-        coinsLabel.text = "🪙  Монеты: \(coins)"
-        levelLabel.text = "Уровень \(tornAces / 5 + 1)  •  Порвано тузов: \(tornAces)"
+        coinsLabel.text = "🪙 Монеты: \(coins)"
+        levelLabel.text = "Уровень \(tornAces / 5 + 1) • В забеге: \(tornAces) • Всего: \(lifetimeAces)"
+        if isBoss {
+            eventLabel.text = "👑 БОСС! Прочность x4 • Награда x5"
+            eventLabel.textColor = .systemRed
+        } else if isRare {
+            eventLabel.text = "✨ РЕДКАЯ КАРТА! Награда x3"
+            eventLabel.textColor = .systemPurple
+        }
         progressView.setProgress(Float(damage) / Float(damageNeeded), animated: true)
         cardView.setDamage(damage: damage, total: damageNeeded)
-        tearButton.setTitle("✂️  ПОРВАТЬ ТУЗ  (+\(tapPower) силы)", for: .normal)
+        tearButton.setTitle("✂️ ПОРВАТЬ ТУЗ (+\(tapPower) силы)", for: .normal)
         powerButton.setTitle("💪 Сила клика: \(tapPower) → \(tapPower + 1)\nЦена: \(powerCost) монет", for: .normal)
-        autoButton.setTitle("⚙️ Авто-надрыв: \(autoPower) в секунду\nЦена: \(autoCost) монет", for: .normal)
+        autoButton.setTitle("⚙️ Авто-надрыв: \(autoPower)/сек\nЦена: \(autoCost) монет", for: .normal)
         bonusButton.setTitle("🎁 Бонус за туз: +\(tearBonus * 10) монет\nУлучшить за: \(bonusCost) монет", for: .normal)
-        prestigeButton.setTitle("♻️ ПРЕСТИЖ: \(prestige)  •  Доход x\(coinMultiplier)\nСбросить улучшения за 10 тузов текущего забега", for: .normal)
-        statsLabel.text = "Прочность карты: \(damage) / \(damageNeeded)\nСила клика: \(tapPower)  •  Авто-сила: \(autoPower)/сек\nВсего порвано: \(lifetimeAces)  •  Престиж: \(prestige)"
+        prestigeButton.setTitle("♻️ ПРЕСТИЖ: \(prestige) • Доход x\(coinMultiplier)\nСбросить улучшения за 10 тузов", for: .normal)
+        statsLabel.text = "Прочность: \(damage)/\(damageNeeded)\nСила: \(tapPower) • Авто: \(autoPower)/сек • Шанс редкой карты: \(min(45, 15 + rareBonus))%\nВсего порвано: \(lifetimeAces) • Престиж: \(prestige)"
         achievementLabel.text = achievementText()
-        let canPower = coins >= powerCost
-        let canAuto = coins >= autoCost
-        let canBonus = coins >= bonusCost
         prestigeButton.alpha = tornAces >= 10 ? 1 : 0.55
-        powerButton.alpha = canPower ? 1 : 0.65
-        autoButton.alpha = canAuto ? 1 : 0.65
-        bonusButton.alpha = canBonus ? 1 : 0.65
+        powerButton.alpha = coins >= powerCost ? 1 : 0.65
+        autoButton.alpha = coins >= autoCost ? 1 : 0.65
+        bonusButton.alpha = coins >= bonusCost ? 1 : 0.65
         saveProgress()
     }
 
     private func achievementText() -> String {
-        if tornAces >= 100 { return "🏆 Легенда колоды! 100 тузов!" }
-        if tornAces >= 50 { return "🥇 Мастер разрыва! 50 тузов!" }
-        if tornAces >= 25 { return "🔥 Без остановки! 25 тузов!" }
-        if tornAces >= 10 { return "⭐ Коллекционер! 10 тузов!" }
-        if tornAces >= 5 { return "🎯 Первое достижение: 5 тузов!" }
+        if lifetimeAces >= 100 { return "🏆 Легенда колоды! 100 тузов!" }
+        if lifetimeAces >= 50 { return "🥇 Мастер разрыва! 50 тузов!" }
+        if lifetimeAces >= 25 { return "🔥 Без остановки! 25 тузов!" }
+        if lifetimeAces >= 10 { return "⭐ Коллекционер! 10 тузов!" }
+        if lifetimeAces >= 5 { return "🎯 Первое достижение: 5 тузов!" }
         return "Цель: порви 5 тузов и получи достижение!"
     }
 
@@ -266,6 +350,7 @@ final class GameViewController: UIViewController {
         defaults.set(tapPower, forKey: "tapPower")
         defaults.set(autoPower, forKey: "autoPower")
         defaults.set(tearBonus, forKey: "tearBonus")
+        defaults.set(rareBonus, forKey: "rareBonus")
         defaults.set(damage, forKey: "damage")
     }
 
@@ -277,13 +362,14 @@ final class GameViewController: UIViewController {
         tapPower = max(1, defaults.integer(forKey: "tapPower"))
         autoPower = defaults.integer(forKey: "autoPower")
         tearBonus = defaults.integer(forKey: "tearBonus")
-        let savedDamage = defaults.integer(forKey: "damage")
-        damage = savedDamage >= damageNeeded ? 0 : max(0, savedDamage)
+        rareBonus = defaults.integer(forKey: "rareBonus")
+        damage = max(0, defaults.integer(forKey: "damage"))
     }
 }
 
 private final class AceCardView: UIView {
     private let card = UIView()
+    private let nameLabel = UILabel()
     private let aceLabel = UILabel()
     private let suitLabel = UILabel()
     private let crackLayer = CAShapeLayer()
@@ -299,6 +385,11 @@ private final class AceCardView: UIView {
         card.layer.shadowOffset = CGSize(width: 0, height: 10)
         card.translatesAutoresizingMaskIntoConstraints = false
         addSubview(card)
+
+        nameLabel.font = .systemFont(ofSize: 13, weight: .black)
+        nameLabel.textAlignment = .center
+        nameLabel.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(nameLabel)
 
         aceLabel.text = "A"
         aceLabel.font = .systemFont(ofSize: 58, weight: .black)
@@ -323,7 +414,9 @@ private final class AceCardView: UIView {
             card.centerYAnchor.constraint(equalTo: centerYAnchor),
             card.widthAnchor.constraint(equalToConstant: 180),
             card.heightAnchor.constraint(equalToConstant: 245),
-            aceLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 12),
+            nameLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 8),
+            nameLabel.centerXAnchor.constraint(equalTo: card.centerXAnchor),
+            aceLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 25),
             aceLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
             suitLabel.centerXAnchor.constraint(equalTo: card.centerXAnchor),
             suitLabel.centerYAnchor.constraint(equalTo: card.centerYAnchor, constant: 15)
@@ -332,8 +425,16 @@ private final class AceCardView: UIView {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
+    func setCard(name: String, suit: String, color: UIColor) {
+        nameLabel.text = name
+        nameLabel.textColor = color
+        aceLabel.textColor = color
+        suitLabel.text = suit
+        suitLabel.textColor = color
+    }
+
     func setDamage(damage: Int, total: Int) {
-        let alpha = CGFloat(damage) / CGFloat(total)
+        let alpha = CGFloat(damage) / CGFloat(max(1, total))
         crackLayer.frame = card.bounds
         let path = UIBezierPath()
         path.move(to: CGPoint(x: card.bounds.midX, y: 65))
@@ -350,9 +451,7 @@ private final class AceCardView: UIView {
         UIView.animate(withDuration: 0.5, animations: {
             self.card.transform = CGAffineTransform(translationX: -38, y: 10).rotated(by: -0.16)
             self.card.alpha = 0.25
-        }) { _ in
-            completion()
-        }
+        }) { _ in completion() }
     }
 
     func resetCard() {

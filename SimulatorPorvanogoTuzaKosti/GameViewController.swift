@@ -6,104 +6,248 @@ final class GameViewController: UIViewController {
     private let cardView = AceCardView()
     private let progressView = UIProgressView(progressViewStyle: .default)
     private let tearButton = UIButton(type: .system)
-    private let resetButton = UIButton(type: .system)
-    private let scoreLabel = UILabel()
+    private let coinsLabel = UILabel()
+    private let statsLabel = UILabel()
+    private let levelLabel = UILabel()
+    private let achievementLabel = UILabel()
+    private let powerButton = UIButton(type: .system)
+    private let autoButton = UIButton(type: .system)
+    private let bonusButton = UIButton(type: .system)
 
-    private let tapsToTear = 25
-    private var taps = 0
+    private let defaults = UserDefaults.standard
+    private let damageNeeded = 100
+    private var damage = 0
+    private var coins = 0
     private var tornAces = 0
+    private var tapPower = 1
+    private var autoPower = 0
+    private var tearBonus = 0
+    private var autoTimer: Timer?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor(red: 0.07, green: 0.09, blue: 0.14, alpha: 1)
+        loadProgress()
         buildInterface()
-        updateProgress()
+        updateInterface()
+        autoTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            self?.applyAutoDamage()
+        }
+        NotificationCenter.default.addObserver(self, selector: #selector(saveProgress), name: UIApplication.willResignActiveNotification, object: nil)
+    }
+
+    deinit {
+        autoTimer?.invalidate()
+        NotificationCenter.default.removeObserver(self)
     }
 
     private func buildInterface() {
         titleLabel.text = "Симулятор порванного туза Кости"
-        titleLabel.font = .systemFont(ofSize: 27, weight: .heavy)
+        titleLabel.font = .systemFont(ofSize: 26, weight: .heavy)
         titleLabel.textColor = .white
         titleLabel.textAlignment = .center
         titleLabel.numberOfLines = 0
 
-        subtitleLabel.text = "Нажимай на кнопку, чтобы порвать туз!"
-        subtitleLabel.font = .systemFont(ofSize: 16, weight: .medium)
+        subtitleLabel.text = "Прокачивай силу и рви тузы быстрее!"
+        subtitleLabel.font = .systemFont(ofSize: 15, weight: .medium)
         subtitleLabel.textColor = .lightGray
         subtitleLabel.textAlignment = .center
         subtitleLabel.numberOfLines = 0
+
+        coinsLabel.font = .systemFont(ofSize: 21, weight: .bold)
+        coinsLabel.textColor = .systemYellow
+        coinsLabel.textAlignment = .center
+
+        levelLabel.font = .systemFont(ofSize: 16, weight: .semibold)
+        levelLabel.textColor = .white
+        levelLabel.textAlignment = .center
 
         progressView.progressTintColor = .systemOrange
         progressView.trackTintColor = UIColor.white.withAlphaComponent(0.15)
         progressView.layer.cornerRadius = 5
         progressView.clipsToBounds = true
 
-        tearButton.setTitle("✂️  ПОРВАТЬ ТУЗ", for: .normal)
-        tearButton.titleLabel?.font = .systemFont(ofSize: 19, weight: .bold)
-        tearButton.setTitleColor(.white, for: .normal)
-        tearButton.backgroundColor = .systemOrange
-        tearButton.layer.cornerRadius = 16
-        tearButton.contentEdgeInsets = UIEdgeInsets(top: 17, left: 24, bottom: 17, right: 24)
+        configureButton(tearButton, title: "✂️  ПОРВАТЬ ТУЗ", color: .systemOrange, size: 19)
         tearButton.addTarget(self, action: #selector(tear), for: .touchUpInside)
 
-        resetButton.setTitle("Начать заново", for: .normal)
-        resetButton.setTitleColor(.systemGray2, for: .normal)
-        resetButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
-        resetButton.addTarget(self, action: #selector(resetGame), for: .touchUpInside)
+        configureButton(powerButton, title: "", color: UIColor(red: 0.18, green: 0.38, blue: 0.68, alpha: 1), size: 15)
+        configureButton(autoButton, title: "", color: UIColor(red: 0.24, green: 0.48, blue: 0.38, alpha: 1), size: 15)
+        configureButton(bonusButton, title: "", color: UIColor(red: 0.48, green: 0.30, blue: 0.62, alpha: 1), size: 15)
+        powerButton.addTarget(self, action: #selector(buyPower), for: .touchUpInside)
+        autoButton.addTarget(self, action: #selector(buyAuto), for: .touchUpInside)
+        bonusButton.addTarget(self, action: #selector(buyBonus), for: .touchUpInside)
 
-        scoreLabel.textColor = .white
-        scoreLabel.font = .systemFont(ofSize: 17, weight: .semibold)
-        scoreLabel.textAlignment = .center
+        statsLabel.font = .systemFont(ofSize: 15, weight: .medium)
+        statsLabel.textColor = .white
+        statsLabel.textAlignment = .center
+        statsLabel.numberOfLines = 0
 
+        achievementLabel.font = .systemFont(ofSize: 14, weight: .medium)
+        achievementLabel.textColor = .systemTeal
+        achievementLabel.textAlignment = .center
+        achievementLabel.numberOfLines = 0
+
+        let shopTitle = makeSectionTitle("МАГАЗИН УЛУЧШЕНИЙ")
         let stack = UIStackView(arrangedSubviews: [
-            titleLabel, subtitleLabel, cardView, progressView,
-            tearButton, scoreLabel, resetButton
+            titleLabel, subtitleLabel, coinsLabel, levelLabel, cardView,
+            progressView, tearButton, shopTitle, powerButton, autoButton,
+            bonusButton, statsLabel, achievementLabel
         ])
         stack.axis = .vertical
         stack.alignment = .fill
-        stack.spacing = 20
+        stack.spacing = 13
         stack.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(stack)
+
+        let scrollView = UIScrollView()
+        scrollView.alwaysBounceVertical = true
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scrollView)
+        scrollView.addSubview(stack)
 
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 22),
-            stack.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -22),
-            stack.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerYAnchor),
-            cardView.heightAnchor.constraint(equalToConstant: 300),
+            scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 18),
+            scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -18),
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
+            scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -8),
+            stack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            stack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            stack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            stack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
+            cardView.heightAnchor.constraint(equalToConstant: 255),
             progressView.heightAnchor.constraint(equalToConstant: 10),
-            tearButton.heightAnchor.constraint(equalToConstant: 58)
+            tearButton.heightAnchor.constraint(equalToConstant: 55),
+            powerButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 54),
+            autoButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 54),
+            bonusButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 54)
         ])
     }
 
+    private func makeSectionTitle(_ text: String) -> UILabel {
+        let label = UILabel()
+        label.text = text
+        label.textColor = .systemOrange
+        label.font = .systemFont(ofSize: 14, weight: .heavy)
+        label.textAlignment = .center
+        return label
+    }
+
+    private func configureButton(_ button: UIButton, title: String, color: UIColor, size: CGFloat) {
+        button.setTitle(title, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: size, weight: .bold)
+        button.titleLabel?.numberOfLines = 0
+        button.titleLabel?.textAlignment = .center
+        button.setTitleColor(.white, for: .normal)
+        button.backgroundColor = color
+        button.layer.cornerRadius = 13
+        button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 12, bottom: 10, right: 12)
+    }
+
     @objc private func tear() {
-        guard taps < tapsToTear else { return }
-        taps += 1
-        cardView.setDamage(taps: taps, total: tapsToTear)
+        guard damage < damageNeeded else { return }
+        damage = min(damageNeeded, damage + tapPower)
+        coins += tapPower
+        cardView.setDamage(damage: damage, total: damageNeeded)
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        updateProgress()
+        if damage == damageNeeded { finishAce() }
+        updateInterface()
+    }
 
-        if taps == tapsToTear {
-            tornAces += 1
-            cardView.tearApart {
-                self.scoreLabel.text = "Порвано тузов: \(self.tornAces) 🎉"
-                self.tearButton.setTitle("ЕЩЁ ОДИН ТУЗ", for: .normal)
-            }
+    private func applyAutoDamage() {
+        guard autoPower > 0, damage < damageNeeded else { return }
+        damage = min(damageNeeded, damage + autoPower)
+        coins += autoPower
+        cardView.setDamage(damage: damage, total: damageNeeded)
+        if damage == damageNeeded { finishAce() }
+        updateInterface()
+    }
+
+    private func finishAce() {
+        tornAces += 1
+        coins += 25 + tearBonus * 10
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+        cardView.tearApart { [weak self] in
+            guard let self = self else { return }
+            self.damage = 0
+            self.cardView.resetCard()
+            self.updateInterface()
         }
     }
 
-    @objc private func resetGame() {
-        taps = 0
-        cardView.resetCard()
-        tearButton.setTitle("✂️  ПОРВАТЬ ТУЗ", for: .normal)
-        updateProgress()
+    @objc private func buyPower() {
+        let cost = powerCost
+        guard coins >= cost else { return }
+        coins -= cost
+        tapPower += 1
+        updateInterface()
+        saveProgress()
     }
 
-    private func updateProgress() {
-        progressView.setProgress(Float(taps) / Float(tapsToTear), animated: true)
-        scoreLabel.text = "Прогресс: \(taps) / \(tapsToTear)"
-        if taps == tapsToTear {
-            scoreLabel.text = "Туз порван! Всего: \(tornAces) 🎉"
-        }
+    @objc private func buyAuto() {
+        let cost = autoCost
+        guard coins >= cost else { return }
+        coins -= cost
+        autoPower += 1
+        updateInterface()
+        saveProgress()
+    }
+
+    @objc private func buyBonus() {
+        let cost = bonusCost
+        guard coins >= cost else { return }
+        coins -= cost
+        tearBonus += 1
+        updateInterface()
+        saveProgress()
+    }
+
+    private var powerCost: Int { Int(ceil(25 * pow(1.55, Double(tapPower - 1)))) }
+    private var autoCost: Int { Int(ceil(60 * pow(1.75, Double(autoPower)))) }
+    private var bonusCost: Int { Int(ceil(40 * pow(1.65, Double(tearBonus)))) }
+
+    private func updateInterface() {
+        coinsLabel.text = "🪙  Монеты: \(coins)"
+        levelLabel.text = "Уровень \(tornAces / 5 + 1)  •  Порвано тузов: \(tornAces)"
+        progressView.setProgress(Float(damage) / Float(damageNeeded), animated: true)
+        tearButton.setTitle("✂️  ПОРВАТЬ ТУЗ  (+\(tapPower) силы)", for: .normal)
+        powerButton.setTitle("💪 Сила клика: \(tapPower) → \(tapPower + 1)\nЦена: \(powerCost) монет", for: .normal)
+        autoButton.setTitle("⚙️ Авто-надрыв: \(autoPower) в секунду\nЦена: \(autoCost) монет", for: .normal)
+        bonusButton.setTitle("🎁 Бонус за туз: +\(tearBonus * 10) монет\nУлучшить за: \(bonusCost) монет", for: .normal)
+        statsLabel.text = "Прочность карты: \(damage) / \(damageNeeded)\nСила клика: \(tapPower)  •  Авто-сила: \(autoPower)/сек"
+        achievementLabel.text = achievementText()
+        let canPower = coins >= powerCost
+        let canAuto = coins >= autoCost
+        let canBonus = coins >= bonusCost
+        powerButton.alpha = canPower ? 1 : 0.65
+        autoButton.alpha = canAuto ? 1 : 0.65
+        bonusButton.alpha = canBonus ? 1 : 0.65
+    }
+
+    private func achievementText() -> String {
+        if tornAces >= 100 { return "🏆 Легенда колоды! 100 тузов!" }
+        if tornAces >= 50 { return "🥇 Мастер разрыва! 50 тузов!" }
+        if tornAces >= 25 { return "🔥 Без остановки! 25 тузов!" }
+        if tornAces >= 10 { return "⭐ Коллекционер! 10 тузов!" }
+        if tornAces >= 5 { return "🎯 Первое достижение: 5 тузов!" }
+        return "Цель: порви 5 тузов и получи достижение!"
+    }
+
+    @objc private func saveProgress() {
+        defaults.set(coins, forKey: "coins")
+        defaults.set(tornAces, forKey: "tornAces")
+        defaults.set(tapPower, forKey: "tapPower")
+        defaults.set(autoPower, forKey: "autoPower")
+        defaults.set(tearBonus, forKey: "tearBonus")
+        defaults.set(damage, forKey: "damage")
+    }
+
+    private func loadProgress() {
+        coins = defaults.integer(forKey: "coins")
+        tornAces = defaults.integer(forKey: "tornAces")
+        tapPower = max(1, defaults.integer(forKey: "tapPower"))
+        autoPower = defaults.integer(forKey: "autoPower")
+        tearBonus = defaults.integer(forKey: "tearBonus")
+        damage = min(damageNeeded, defaults.integer(forKey: "damage"))
     }
 }
 
@@ -146,8 +290,8 @@ private final class AceCardView: UIView {
         NSLayoutConstraint.activate([
             card.centerXAnchor.constraint(equalTo: centerXAnchor),
             card.centerYAnchor.constraint(equalTo: centerYAnchor),
-            card.widthAnchor.constraint(equalToConstant: 190),
-            card.heightAnchor.constraint(equalToConstant: 270),
+            card.widthAnchor.constraint(equalToConstant: 180),
+            card.heightAnchor.constraint(equalToConstant: 245),
             aceLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 12),
             aceLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
             suitLabel.centerXAnchor.constraint(equalTo: card.centerXAnchor),
@@ -157,30 +301,31 @@ private final class AceCardView: UIView {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func setDamage(taps: Int, total: Int) {
-        let alpha = CGFloat(taps) / CGFloat(total)
+    func setDamage(damage: Int, total: Int) {
+        let alpha = CGFloat(damage) / CGFloat(total)
         crackLayer.frame = card.bounds
         let path = UIBezierPath()
-        path.move(to: CGPoint(x: card.bounds.midX, y: 80))
-        path.addLine(to: CGPoint(x: card.bounds.midX - 12, y: 115))
-        path.addLine(to: CGPoint(x: card.bounds.midX + 9, y: 145))
-        path.addLine(to: CGPoint(x: card.bounds.midX - 8, y: 180))
+        path.move(to: CGPoint(x: card.bounds.midX, y: 65))
+        path.addLine(to: CGPoint(x: card.bounds.midX - 12, y: 100))
+        path.addLine(to: CGPoint(x: card.bounds.midX + 9, y: 130))
+        path.addLine(to: CGPoint(x: card.bounds.midX - 8, y: 165))
+        path.addLine(to: CGPoint(x: card.bounds.midX + 5, y: 205))
         crackLayer.path = path.cgPath
         crackLayer.opacity = Float(alpha)
         card.transform = CGAffineTransform(rotationAngle: CGFloat.random(in: -0.025...0.025))
     }
 
     func tearApart(completion: @escaping () -> Void) {
-        UIView.animate(withDuration: 0.55, animations: {
-            self.card.transform = CGAffineTransform(translationX: -42, y: 12).rotated(by: -0.16)
-            self.card.alpha = 0.35
+        UIView.animate(withDuration: 0.5, animations: {
+            self.card.transform = CGAffineTransform(translationX: -38, y: 10).rotated(by: -0.16)
+            self.card.alpha = 0.25
         }) { _ in
             completion()
         }
     }
 
     func resetCard() {
-        UIView.animate(withDuration: 0.25) {
+        UIView.animate(withDuration: 0.22) {
             self.card.transform = .identity
             self.card.alpha = 1
             self.crackLayer.opacity = 0

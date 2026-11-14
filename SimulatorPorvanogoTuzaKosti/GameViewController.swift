@@ -13,6 +13,10 @@ final class GameViewController: UIViewController {
     private let progressView = UIProgressView(progressViewStyle: .default)
     private let tearButton = UIButton(type: .system)
     private let coinsLabel = UILabel()
+    private let gemsLabel = UILabel()
+    private let dailyRewardButton = UIButton(type: .system)
+    private let offerButton = UIButton(type: .system)
+    private let skinButtons = (0..<3).map { _ in UIButton(type: .system) }
     private let statsLabel = UILabel()
     private let levelLabel = UILabel()
     private let achievementLabel = UILabel()
@@ -27,6 +31,8 @@ final class GameViewController: UIViewController {
     private let defaults = UserDefaults.standard
     private var damage = 0
     private var coins = 0
+    private var gems = 0
+    private var selectedSkin = 0
     private var tornAces = 0
     private var lifetimeAces = 0
     private var prestige = 0
@@ -97,6 +103,20 @@ final class GameViewController: UIViewController {
         progressView.layer.cornerRadius = 5
         progressView.clipsToBounds = true
 
+        gemsLabel.font = .systemFont(ofSize: 17, weight: .bold)
+        gemsLabel.textColor = .systemTeal
+        gemsLabel.textAlignment = .center
+
+        configureButton(dailyRewardButton, title: "🎁 ЗАБРАТЬ ЕЖЕДНЕВНУЮ НАГРАДУ", color: UIColor(red: 0.12, green: 0.48, blue: 0.38, alpha: 1), size: 15)
+        dailyRewardButton.addTarget(self, action: #selector(claimDailyReward), for: .touchUpInside)
+        configureButton(offerButton, title: "", color: UIColor(red: 0.55, green: 0.30, blue: 0.16, alpha: 1), size: 15)
+        offerButton.addTarget(self, action: #selector(buyDailyOffer), for: .touchUpInside)
+        for (index, button) in skinButtons.enumerated() {
+            configureButton(button, title: "", color: UIColor(red: 0.28, green: 0.30, blue: 0.48, alpha: 1), size: 14)
+            button.tag = index
+            button.addTarget(self, action: #selector(buySkin(_:)), for: .touchUpInside)
+        }
+
         configureButton(tearButton, title: "✂️ ПОРВАТЬ ТУЗ", color: .systemOrange, size: 19)
         tearButton.addTarget(self, action: #selector(tear), for: .touchUpInside)
 
@@ -128,9 +148,11 @@ final class GameViewController: UIViewController {
         achievementLabel.numberOfLines = 0
 
         let stack = UIStackView(arrangedSubviews: [
-            titleLabel, subtitleLabel, coinsLabel, levelLabel, eventLabel, cardView,
+            titleLabel, subtitleLabel, coinsLabel, gemsLabel, levelLabel, eventLabel, cardView,
             progressView, tearButton, choiceTitle, choiceButtons[0], choiceButtons[1],
-            choiceButtons[2], makeSectionTitle("МАГАЗИН УЛУЧШЕНИЙ"), powerButton,
+            choiceButtons[2], makeSectionTitle("🛍️ МАГАЗИН SIND"), dailyRewardButton, offerButton,
+            skinButtons[0], skinButtons[1], skinButtons[2],
+            makeSectionTitle("УЛУЧШЕНИЯ ЗА МОНЕТЫ"), powerButton,
             autoButton, bonusButton, prestigeButton, statsLabel, achievementLabel
         ])
         stack.axis = .vertical
@@ -191,7 +213,8 @@ final class GameViewController: UIViewController {
         let suit = ["♥", "♦", "♣", "♠"].randomElement() ?? "♥"
         let color: UIColor = (suit == "♥" || suit == "♦") ? .systemRed : .black
         let name = isBoss ? "БОСС • КОРОЛЬ" : (isRare ? "РЕДКИЙ ТУЗ" : "ТУЗ")
-        cardView.setCard(name: name, suit: suit, color: color)
+        let skinColors: [UIColor] = [.systemRed, .systemTeal, .systemPurple]
+        cardView.setCard(name: name, suit: suit, color: skinColors[selectedSkin])
     }
 
     @objc private func tear() {
@@ -267,6 +290,65 @@ final class GameViewController: UIViewController {
         saveProgress()
     }
 
+    private var dayNumber: Int {
+        let parts = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+        return (parts.year ?? 0) * 10000 + (parts.month ?? 0) * 100 + (parts.day ?? 0)
+    }
+
+    @objc private func claimDailyReward() {
+        let lastClaim = defaults.integer(forKey: "shopDailyClaim")
+        guard lastClaim != dayNumber else { return }
+        coins += 250
+        gems += 5
+        defaults.set(dayNumber, forKey: "shopDailyClaim")
+        eventLabel.text = "🎁 Награда получена: 250 монет и 5 кристаллов!"
+        updateInterface()
+    }
+
+    @objc private func buyDailyOffer() {
+        let offerIndex = dayNumber % 3
+        let costs = [10, 15, 20]
+        let rewards = [700, 1200, 1800]
+        guard gems >= costs[offerIndex] else {
+            eventLabel.text = "Не хватает кристаллов для предложения"
+            return
+        }
+        gems -= costs[offerIndex]
+        coins += rewards[offerIndex]
+        eventLabel.text = "🛍️ Куплено предложение дня!"
+        updateInterface()
+    }
+
+    @objc private func buySkin(_ sender: UIButton) {
+        let skin = sender.tag
+        if selectedSkin == skin {
+            eventLabel.text = "Этот стиль уже выбран"
+            return
+        }
+        let prices = [0, 20, 35]
+        if skin == 0 || defaults.bool(forKey: "shopSkin\(skin)Owned") {
+            selectedSkin = skin
+        } else if gems >= prices[skin] {
+            gems -= prices[skin]
+            defaults.set(true, forKey: "shopSkin\(skin)Owned")
+            selectedSkin = skin
+        } else {
+            eventLabel.text = "Не хватает кристаллов для этого стиля"
+            return
+        }
+        updateCardAppearance()
+        eventLabel.text = "🎨 Стиль карты изменён!"
+        updateInterface()
+    }
+
+    private func updateCardAppearance() {
+        let suits = ["♥", "♦", "♣", "♠"]
+        let suit = suits.randomElement() ?? "♥"
+        let colors: [UIColor] = [.systemRed, .systemTeal, .systemPurple]
+        let name = isBoss ? "БОСС • КОРОЛЬ" : (isRare ? "РЕДКИЙ ТУЗ" : "ТУЗ")
+        cardView.setCard(name: name, suit: suit, color: colors[selectedSkin])
+    }
+
     @objc private func buyPower() {
         guard coins >= powerCost else { return }
         coins -= powerCost
@@ -309,6 +391,7 @@ final class GameViewController: UIViewController {
 
     private func updateInterface() {
         coinsLabel.text = "🪙 Монеты: \(coins)"
+        gemsLabel.text = "💎 Кристаллы: \(gems)"
         levelLabel.text = "Уровень \(tornAces / 5 + 1) • В забеге: \(tornAces) • Всего: \(lifetimeAces)"
         if isBoss {
             eventLabel.text = "👑 БОСС! Прочность x4 • Награда x5"
@@ -320,6 +403,18 @@ final class GameViewController: UIViewController {
         progressView.setProgress(Float(damage) / Float(damageNeeded), animated: true)
         cardView.setDamage(damage: damage, total: damageNeeded)
         tearButton.setTitle("✂️ ПОРВАТЬ ТУЗ (+\(tapPower) силы)", for: .normal)
+        let offerIndex = dayNumber % 3
+        let offerNames = ["🧰 Малый набор: 700 монет", "🎒 Средний набор: 1200 монет", "👑 Большой набор: 1800 монет"]
+        let offerCosts = [10, 15, 20]
+        offerButton.setTitle("\(offerNames[offerIndex])\nЦена: \(offerCosts[offerIndex]) 💎", for: .normal)
+        dailyRewardButton.setTitle(defaults.integer(forKey: "shopDailyClaim") == dayNumber ? "✅ НАГРАДА УЖЕ ПОЛУЧЕНА" : "🎁 БЕСПЛАТНО: 250 🪙 + 5 💎", for: .normal)
+        dailyRewardButton.isEnabled = defaults.integer(forKey: "shopDailyClaim") != dayNumber
+        let skinNames = ["🔴 Классический стиль • Бесплатно", "🌊 Неоновый стиль • 20 💎", "🟣 Космический стиль • 35 💎"]
+        for index in 0..<3 {
+            let owned = index == 0 || defaults.bool(forKey: "shopSkin\(index)Owned")
+            skinButtons[index].setTitle("\(skinNames[index])\n\(selectedSkin == index ? "✓ Выбрано" : (owned ? "Выбрать" : "Купить")), for: .normal)
+            skinButtons[index].alpha = selectedSkin == index ? 1 : 0.85
+        }
         powerButton.setTitle("💪 Сила клика: \(tapPower) → \(tapPower + 1)\nЦена: \(powerCost) монет", for: .normal)
         autoButton.setTitle("⚙️ Авто-надрыв: \(autoPower)/сек\nЦена: \(autoCost) монет", for: .normal)
         bonusButton.setTitle("🎁 Бонус за туз: +\(tearBonus * 10) монет\nУлучшить за: \(bonusCost) монет", for: .normal)
@@ -344,6 +439,8 @@ final class GameViewController: UIViewController {
 
     @objc private func saveProgress() {
         defaults.set(coins, forKey: "coins")
+        defaults.set(gems, forKey: "shopGems")
+        defaults.set(selectedSkin, forKey: "shopSelectedSkin")
         defaults.set(tornAces, forKey: "tornAces")
         defaults.set(lifetimeAces, forKey: "lifetimeAces")
         defaults.set(prestige, forKey: "prestige")
@@ -356,6 +453,8 @@ final class GameViewController: UIViewController {
 
     private func loadProgress() {
         coins = defaults.integer(forKey: "coins")
+        gems = defaults.integer(forKey: "shopGems")
+        selectedSkin = min(2, max(0, defaults.integer(forKey: "shopSelectedSkin")))
         tornAces = defaults.integer(forKey: "tornAces")
         lifetimeAces = defaults.integer(forKey: "lifetimeAces")
         prestige = defaults.integer(forKey: "prestige")

@@ -81,7 +81,7 @@ final class GameViewController: UIViewController {
         autoButton.addTarget(self, action: #selector(buyAuto), for: .touchUpInside)
         bonusButton.addTarget(self, action: #selector(buyBonus), for: .touchUpInside)
         configureButton(prestigeButton, title: "", color: UIColor(red: 0.55, green: 0.32, blue: 0.18, alpha: 1), size: 15)
-        prestigeButton.addTarget(self, action: #selector.performPrestige), for: .touchUpInside)
+        prestigeButton.addTarget(self, action: #selector(performPrestige), for: .touchUpInside)
 
         statsLabel.font = .systemFont(ofSize: 15, weight: .medium)
         statsLabel.textColor = .white

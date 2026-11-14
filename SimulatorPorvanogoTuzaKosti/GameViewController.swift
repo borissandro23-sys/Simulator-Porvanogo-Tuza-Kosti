@@ -249,7 +249,8 @@ final class GameViewController: UIViewController {
         tapPower = max(1, defaults.integer(forKey: "tapPower"))
         autoPower = defaults.integer(forKey: "autoPower")
         tearBonus = defaults.integer(forKey: "tearBonus")
-        damage = min(damageNeeded, defaults.integer(forKey: "damage"))
+        let savedDamage = defaults.integer(forKey: "damage")
+        damage = savedDamage >= damageNeeded ? 0 : max(0, savedDamage)
     }
 }
 

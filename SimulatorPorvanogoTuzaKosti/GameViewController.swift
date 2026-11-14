@@ -385,9 +385,15 @@ final class GameViewController: UIViewController {
         updateInterface()
     }
 
-    private var powerCost: Int { Int(ceil(25 * pow(1.55, Double(tapPower - 1)))) }
-    private var autoCost: Int { Int(ceil(60 * pow(1.75, Double(autoPower)))) }
-    private var bonusCost: Int { Int(ceil(40 * pow(1.65, Double(tearBonus)))) }
+    // Quadratic prices grow steadily instead of exploding exponentially.
+    private func balancedCost(base: Int, level: Int, coefficient: Int) -> Int {
+        let safeLevel = min(10_000, max(0, level))
+        return min(1_000_000_000, base + coefficient * safeLevel * safeLevel)
+    }
+
+    private var powerCost: Int { balancedCost(base: 25, level: tapPower - 1, coefficient: 8) }
+    private var autoCost: Int { balancedCost(base: 60, level: autoPower, coefficient: 12) }
+    private var bonusCost: Int { balancedCost(base: 40, level: tearBonus, coefficient: 10) }
 
     private func updateInterface() {
         coinsLabel.text = "🪙 Монеты: \(coins)"

@@ -209,6 +209,7 @@ final class GameViewController: UIViewController {
         coinsLabel.text = "🪙  Монеты: \(coins)"
         levelLabel.text = "Уровень \(tornAces / 5 + 1)  •  Порвано тузов: \(tornAces)"
         progressView.setProgress(Float(damage) / Float(damageNeeded), animated: true)
+        cardView.setDamage(damage: damage, total: damageNeeded)
         tearButton.setTitle("✂️  ПОРВАТЬ ТУЗ  (+\(tapPower) силы)", for: .normal)
         powerButton.setTitle("💪 Сила клика: \(tapPower) → \(tapPower + 1)\nЦена: \(powerCost) монет", for: .normal)
         autoButton.setTitle("⚙️ Авто-надрыв: \(autoPower) в секунду\nЦена: \(autoCost) монет", for: .normal)
@@ -221,6 +222,7 @@ final class GameViewController: UIViewController {
         powerButton.alpha = canPower ? 1 : 0.65
         autoButton.alpha = canAuto ? 1 : 0.65
         bonusButton.alpha = canBonus ? 1 : 0.65
+        saveProgress()
     }
 
     private func achievementText() -> String {

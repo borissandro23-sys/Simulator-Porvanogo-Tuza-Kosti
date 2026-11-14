@@ -22,7 +22,7 @@ final class GameViewController: UIViewController {
     private var lifetimeAces = 0
     private var prestige = 0
     private var damageNeeded: Int { 100 + (lifetimeAces / 10) * 25 }
-    private var coinMultiplier: Int { 1 + prestige / 2 }
+    private var coinMultiplier: Int { 1 + prestige }
     private var tapPower = 1
     private var autoPower = 0
     private var tearBonus = 0

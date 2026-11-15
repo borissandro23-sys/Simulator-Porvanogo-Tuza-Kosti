@@ -71,130 +71,185 @@ final class GameViewController: UIViewController {
     }
 
     private func buildInterface() {
-        titleLabel.text = "Симулятор порванного туза Кости"
-        titleLabel.font = .systemFont(ofSize: 26, weight: .heavy)
+        view.backgroundColor = UIColor(red: 0.055, green: 0.075, blue: 0.12, alpha: 1)
+
+        titleLabel.text = "ТУЗ КОСТИ"
+        titleLabel.font = .systemFont(ofSize: 29, weight: .black)
         titleLabel.textColor = .white
         titleLabel.textAlignment = .center
         titleLabel.numberOfLines = 0
 
-        subtitleLabel.text = "Бей боссов. Открывай редкие карты. Выбирай свой билд."
-        subtitleLabel.font = .systemFont(ofSize: 15, weight: .medium)
-        subtitleLabel.textColor = .lightGray
+        subtitleLabel.text = "Разрывай карты • Собирай награды • Становись легендой"
+        subtitleLabel.font = .systemFont(ofSize: 13, weight: .medium)
+        subtitleLabel.textColor = UIColor(white: 0.72, alpha: 1)
         subtitleLabel.textAlignment = .center
         subtitleLabel.numberOfLines = 0
 
-        coinsLabel.font = .systemFont(ofSize: 21, weight: .bold)
+        coinsLabel.font = .systemFont(ofSize: 18, weight: .bold)
         coinsLabel.textColor = .systemYellow
         coinsLabel.textAlignment = .center
+        gemsLabel.font = .systemFont(ofSize: 18, weight: .bold)
+        gemsLabel.textColor = .systemTeal
+        gemsLabel.textAlignment = .center
 
-        levelLabel.font = .systemFont(ofSize: 16, weight: .semibold)
+        levelLabel.font = .systemFont(ofSize: 14, weight: .semibold)
         levelLabel.textColor = .white
         levelLabel.textAlignment = .center
+        levelLabel.numberOfLines = 0
 
-        eventLabel.font = .systemFont(ofSize: 16, weight: .heavy)
+        eventLabel.font = .systemFont(ofSize: 15, weight: .bold)
         eventLabel.textColor = .systemTeal
         eventLabel.textAlignment = .center
         eventLabel.numberOfLines = 0
 
         choiceTitle.text = "🎲 ВЫБЕРИ ОДНО УЛУЧШЕНИЕ"
-        choiceTitle.font = .systemFont(ofSize: 15, weight: .heavy)
+        choiceTitle.font = .systemFont(ofSize: 14, weight: .heavy)
         choiceTitle.textColor = .systemYellow
         choiceTitle.textAlignment = .center
+        choiceTitle.numberOfLines = 0
 
         progressView.progressTintColor = .systemOrange
-        progressView.trackTintColor = UIColor.white.withAlphaComponent(0.15)
+        progressView.trackTintColor = UIColor.white.withAlphaComponent(0.12)
         progressView.layer.cornerRadius = 5
         progressView.clipsToBounds = true
 
-        gemsLabel.font = .systemFont(ofSize: 17, weight: .bold)
-        gemsLabel.textColor = .systemTeal
-        gemsLabel.textAlignment = .center
-
-        configureButton(dailyRewardButton, title: "🎁 ЗАБРАТЬ ЕЖЕДНЕВНУЮ НАГРАДУ", color: UIColor(red: 0.12, green: 0.48, blue: 0.38, alpha: 1), size: 15)
+        configureButton(dailyRewardButton, title: "🎁 ЕЖЕДНЕВНАЯ НАГРАДА", color: UIColor(red: 0.12, green: 0.43, blue: 0.34, alpha: 1), size: 15)
         dailyRewardButton.addTarget(self, action: #selector(claimDailyReward), for: .touchUpInside)
-        configureButton(offerButton, title: "", color: UIColor(red: 0.55, green: 0.30, blue: 0.16, alpha: 1), size: 15)
+        configureButton(offerButton, title: "", color: UIColor(red: 0.43, green: 0.27, blue: 0.16, alpha: 1), size: 14)
         offerButton.addTarget(self, action: #selector(buyDailyOffer), for: .touchUpInside)
+
         for (index, button) in skinButtons.enumerated() {
-            configureButton(button, title: "", color: UIColor(red: 0.28, green: 0.30, blue: 0.48, alpha: 1), size: 14)
+            configureButton(button, title: "", color: UIColor(red: 0.22, green: 0.25, blue: 0.39, alpha: 1), size: 13)
             button.tag = index
             button.addTarget(self, action: #selector(buySkin(_:)), for: .touchUpInside)
         }
 
-        configureButton(tearButton, title: "✂️ ПОРВАТЬ ТУЗ", color: .systemOrange, size: 19)
+        configureButton(tearButton, title: "✂️  ПОРВАТЬ ТУЗ", color: UIColor(red: 0.91, green: 0.34, blue: 0.16, alpha: 1), size: 19)
         tearButton.addTarget(self, action: #selector(tear), for: .touchUpInside)
 
         for (index, button) in choiceButtons.enumerated() {
-            configureButton(button, title: "", color: UIColor(red: 0.30, green: 0.28, blue: 0.55, alpha: 1), size: 14)
+            configureButton(button, title: "", color: UIColor(red: 0.25, green: 0.27, blue: 0.48, alpha: 1), size: 14)
             button.tag = index
             button.addTarget(self, action: #selector(chooseUpgrade(_:)), for: .touchUpInside)
             button.isHidden = true
         }
         choiceTitle.isHidden = true
 
-        configureButton(powerButton, title: "", color: UIColor(red: 0.18, green: 0.38, blue: 0.68, alpha: 1), size: 15)
-        configureButton(autoButton, title: "", color: UIColor(red: 0.24, green: 0.48, blue: 0.38, alpha: 1), size: 15)
-        configureButton(bonusButton, title: "", color: UIColor(red: 0.48, green: 0.30, blue: 0.62, alpha: 1), size: 15)
+        configureButton(powerButton, title: "", color: UIColor(red: 0.16, green: 0.32, blue: 0.57, alpha: 1), size: 14)
+        configureButton(autoButton, title: "", color: UIColor(red: 0.16, green: 0.40, blue: 0.31, alpha: 1), size: 14)
+        configureButton(bonusButton, title: "", color: UIColor(red: 0.39, green: 0.25, blue: 0.52, alpha: 1), size: 14)
+        configureButton(prestigeButton, title: "", color: UIColor(red: 0.48, green: 0.29, blue: 0.17, alpha: 1), size: 14)
         powerButton.addTarget(self, action: #selector(buyPower), for: .touchUpInside)
         autoButton.addTarget(self, action: #selector(buyAuto), for: .touchUpInside)
         bonusButton.addTarget(self, action: #selector(buyBonus), for: .touchUpInside)
-        configureButton(prestigeButton, title: "", color: UIColor(red: 0.55, green: 0.32, blue: 0.18, alpha: 1), size: 15)
         prestigeButton.addTarget(self, action: #selector(performPrestige), for: .touchUpInside)
 
-        statsLabel.font = .systemFont(ofSize: 15, weight: .medium)
-        statsLabel.textColor = .white
-        statsLabel.textAlignment = .center
+        statsLabel.font = .systemFont(ofSize: 13, weight: .medium)
+        statsLabel.textColor = UIColor(white: 0.88, alpha: 1)
+        statsLabel.textAlignment = .left
         statsLabel.numberOfLines = 0
 
-        achievementLabel.font = .systemFont(ofSize: 14, weight: .medium)
+        achievementLabel.font = .systemFont(ofSize: 14, weight: .semibold)
         achievementLabel.textColor = .systemTeal
         achievementLabel.textAlignment = .center
         achievementLabel.numberOfLines = 0
 
+        let header = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
+        header.axis = .vertical
+        header.alignment = .fill
+        header.spacing = 5
+
+        let balanceRow = UIStackView(arrangedSubviews: [coinsLabel, gemsLabel])
+        balanceRow.axis = .horizontal
+        balanceRow.distribution = .fillEqually
+        balanceRow.spacing = 8
+
+        let cardPanel = makePanel([
+            eventLabel, cardView, progressView, tearButton
+        ])
+        let shopPanel = makePanel([
+            makeSectionTitle("🛍️  МАГАЗИН"), dailyRewardButton, offerButton,
+            skinButtons[0], skinButtons[1], skinButtons[2]
+        ])
+        let upgradesPanel = makePanel([
+            makeSectionTitle("⚡  УЛУЧШЕНИЯ"), powerButton, autoButton,
+            bonusButton, prestigeButton
+        ])
+        let choicesPanel = makePanel([
+            choiceTitle, choiceButtons[0], choiceButtons[1], choiceButtons[2]
+        ])
+        let statsPanel = makePanel([
+            makeSectionTitle("📊  ТВОЙ ПРОГРЕСС"), statsLabel, achievementLabel
+        ])
+
         let stack = UIStackView(arrangedSubviews: [
-            titleLabel, subtitleLabel, coinsLabel, gemsLabel, levelLabel, eventLabel, cardView,
-            progressView, tearButton, choiceTitle, choiceButtons[0], choiceButtons[1],
-            choiceButtons[2], makeSectionTitle("🛍️ МАГАЗИН SIND"), dailyRewardButton, offerButton,
-            skinButtons[0], skinButtons[1], skinButtons[2],
-            makeSectionTitle("УЛУЧШЕНИЯ ЗА МОНЕТЫ"), powerButton,
-            autoButton, bonusButton, prestigeButton, statsLabel, achievementLabel
+            header, balanceRow, levelLabel, cardPanel, choicesPanel,
+            shopPanel, upgradesPanel, statsPanel
         ])
         stack.axis = .vertical
         stack.alignment = .fill
-        stack.spacing = 13
+        stack.spacing = 14
         stack.translatesAutoresizingMaskIntoConstraints = false
 
         let scrollView = UIScrollView()
         scrollView.alwaysBounceVertical = true
+        scrollView.showsVerticalScrollIndicator = false
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(scrollView)
         scrollView.addSubview(stack)
 
         NSLayoutConstraint.activate([
-            scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 18),
-            scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -18),
-            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
+            scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 14),
+            scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -14),
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
             scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -8),
             stack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
             stack.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
             stack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
             stack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
             stack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
-            cardView.heightAnchor.constraint(equalToConstant: 255),
-            progressView.heightAnchor.constraint(equalToConstant: 10),
-            tearButton.heightAnchor.constraint(equalToConstant: 55),
-            powerButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 54),
-            autoButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 54),
-            bonusButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 54),
+            cardView.heightAnchor.constraint(equalToConstant: 245),
+            progressView.heightAnchor.constraint(equalToConstant: 9),
+            tearButton.heightAnchor.constraint(equalToConstant: 56),
+            dailyRewardButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 48),
+            offerButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 52),
+            powerButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 56),
+            autoButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 56),
+            bonusButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 56),
             prestigeButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 58)
         ])
+    }
+
+    private func makePanel(_ arrangedSubviews: [UIView]) -> UIView {
+        let panel = UIView()
+        panel.backgroundColor = UIColor(red: 0.105, green: 0.13, blue: 0.20, alpha: 1)
+        panel.layer.cornerRadius = 18
+        panel.layer.borderWidth = 1
+        panel.layer.borderColor = UIColor.white.withAlphaComponent(0.07).cgColor
+        panel.translatesAutoresizingMaskIntoConstraints = false
+
+        let stack = UIStackView(arrangedSubviews: arrangedSubviews)
+        stack.axis = .vertical
+        stack.alignment = .fill
+        stack.spacing = 11
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        panel.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 14),
+            stack.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -14),
+            stack.topAnchor.constraint(equalTo: panel.topAnchor, constant: 14),
+            stack.bottomAnchor.constraint(equalTo: panel.bottomAnchor, constant: -14)
+        ])
+        return panel
     }
 
     private func makeSectionTitle(_ text: String) -> UILabel {
         let label = UILabel()
         label.text = text
-        label.textColor = .systemOrange
+        label.textColor = UIColor(red: 1, green: 0.68, blue: 0.32, alpha: 1)
         label.font = .systemFont(ofSize: 14, weight: .heavy)
-        label.textAlignment = .center
+        label.textAlignment = .left
         return label
     }
 
@@ -204,9 +259,14 @@ final class GameViewController: UIViewController {
         button.titleLabel?.numberOfLines = 0
         button.titleLabel?.textAlignment = .center
         button.setTitleColor(.white, for: .normal)
+        button.setTitleColor(UIColor.white.withAlphaComponent(0.55), for: .disabled)
         button.backgroundColor = color
         button.layer.cornerRadius = 13
-        button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 12, bottom: 10, right: 12)
+        button.layer.borderWidth = 1
+        button.layer.borderColor = UIColor.white.withAlphaComponent(0.08).cgColor
+        button.contentEdgeInsets = UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
+        button.titleLabel?.adjustsFontSizeToFitWidth = true
+        button.titleLabel?.minimumScaleFactor = 0.82
     }
 
     private func setupTearSound() {

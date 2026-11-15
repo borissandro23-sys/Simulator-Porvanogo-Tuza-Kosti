@@ -71,11 +71,25 @@ final class GameViewController: UIViewController {
     }
 
     private func buildInterface() {
-        view.backgroundColor = UIColor(red: 0.055, green: 0.075, blue: 0.12, alpha: 1)
+        let background = CAGradientLayer()
+        background.colors = [
+            UIColor(red: 0.10, green: 0.22, blue: 0.52, alpha: 1).cgColor,
+            UIColor(red: 0.25, green: 0.12, blue: 0.48, alpha: 1).cgColor,
+            UIColor(red: 0.08, green: 0.12, blue: 0.30, alpha: 1).cgColor
+        ]
+        background.startPoint = CGPoint(x: 0, y: 0)
+        background.endPoint = CGPoint(x: 1, y: 1)
+        background.frame = view.bounds
+        background.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
+        view.layer.insertSublayer(background, at: 0)
 
         titleLabel.text = "ТУЗ КОСТИ"
-        titleLabel.font = .systemFont(ofSize: 29, weight: .black)
-        titleLabel.textColor = .white
+        titleLabel.font = .systemFont(ofSize: 31, weight: .black)
+        titleLabel.textColor = UIColor(red: 1, green: 0.88, blue: 0.28, alpha: 1)
+        titleLabel.layer.shadowColor = UIColor.black.cgColor
+        titleLabel.layer.shadowOpacity = 0.45
+        titleLabel.layer.shadowRadius = 2
+        titleLabel.layer.shadowOffset = CGSize(width: 0, height: 3)
         titleLabel.textAlignment = .center
         titleLabel.numberOfLines = 0
 
@@ -88,9 +102,11 @@ final class GameViewController: UIViewController {
         coinsLabel.font = .systemFont(ofSize: 18, weight: .bold)
         coinsLabel.textColor = .systemYellow
         coinsLabel.textAlignment = .center
+        styleCurrencyLabel(coinsLabel, color: UIColor(red: 0.55, green: 0.31, blue: 0.06, alpha: 1))
         gemsLabel.font = .systemFont(ofSize: 18, weight: .bold)
         gemsLabel.textColor = .systemTeal
         gemsLabel.textAlignment = .center
+        styleCurrencyLabel(gemsLabel, color: UIColor(red: 0.03, green: 0.30, blue: 0.43, alpha: 1))
 
         levelLabel.font = .systemFont(ofSize: 14, weight: .semibold)
         levelLabel.textColor = .white
@@ -164,23 +180,28 @@ final class GameViewController: UIViewController {
         balanceRow.distribution = .fillEqually
         balanceRow.spacing = 8
 
-        let cardPanel = makePanel([
-            eventLabel, cardView, progressView, tearButton
-        ])
-        let shopPanel = makePanel([
-            makeSectionTitle("🛍️  МАГАЗИН"), dailyRewardButton, offerButton,
-            skinButtons[0], skinButtons[1], skinButtons[2]
-        ])
-        let upgradesPanel = makePanel([
-            makeSectionTitle("⚡  УЛУЧШЕНИЯ"), powerButton, autoButton,
-            bonusButton, prestigeButton
-        ])
-        let choicesPanel = makePanel([
-            choiceTitle, choiceButtons[0], choiceButtons[1], choiceButtons[2]
-        ])
-        let statsPanel = makePanel([
-            makeSectionTitle("📊  ТВОЙ ПРОГРЕСС"), statsLabel, achievementLabel
-        ])
+        let cardPanel = makePanel(
+            [eventLabel, cardView, progressView, tearButton],
+            color: UIColor(red: 0.12, green: 0.43, blue: 0.78, alpha: 1)
+        )
+        let shopPanel = makePanel(
+            [makeSectionTitle("🛍️  МАГАЗИН"), dailyRewardButton, offerButton,
+             skinButtons[0], skinButtons[1], skinButtons[2]],
+            color: UIColor(red: 0.43, green: 0.22, blue: 0.66, alpha: 1)
+        )
+        let upgradesPanel = makePanel(
+            [makeSectionTitle("⚡  УЛУЧШЕНИЯ"), powerButton, autoButton,
+             bonusButton, prestigeButton],
+            color: UIColor(red: 0.72, green: 0.32, blue: 0.13, alpha: 1)
+        )
+        let choicesPanel = makePanel(
+            [choiceTitle, choiceButtons[0], choiceButtons[1], choiceButtons[2]],
+            color: UIColor(red: 0.08, green: 0.48, blue: 0.48, alpha: 1)
+        )
+        let statsPanel = makePanel(
+            [makeSectionTitle("📊  ТВОЙ ПРОГРЕСС"), statsLabel, achievementLabel],
+            color: UIColor(red: 0.17, green: 0.29, blue: 0.53, alpha: 1)
+        )
 
         let stack = UIStackView(arrangedSubviews: [
             header, balanceRow, levelLabel, cardPanel, choicesPanel,
@@ -220,12 +241,26 @@ final class GameViewController: UIViewController {
         ])
     }
 
-    private func makePanel(_ arrangedSubviews: [UIView]) -> UIView {
+    private func styleCurrencyLabel(_ label: UILabel, color: UIColor) {
+        label.backgroundColor = UIColor(red: 1, green: 0.91, blue: 0.60, alpha: 1)
+        label.textColor = color
+        label.layer.cornerRadius = 14
+        label.layer.masksToBounds = true
+        label.layer.borderWidth = 2
+        label.layer.borderColor = UIColor.white.withAlphaComponent(0.65).cgColor
+        label.font = .systemFont(ofSize: 16, weight: .black)
+    }
+
+    private func makePanel(_ arrangedSubviews: [UIView], color: UIColor = UIColor(red: 0.12, green: 0.18, blue: 0.32, alpha: 1)) -> UIView {
         let panel = UIView()
-        panel.backgroundColor = UIColor(red: 0.105, green: 0.13, blue: 0.20, alpha: 1)
-        panel.layer.cornerRadius = 18
-        panel.layer.borderWidth = 1
-        panel.layer.borderColor = UIColor.white.withAlphaComponent(0.07).cgColor
+        panel.backgroundColor = color
+        panel.layer.cornerRadius = 22
+        panel.layer.borderWidth = 2
+        panel.layer.borderColor = UIColor.white.withAlphaComponent(0.24).cgColor
+        panel.layer.shadowColor = UIColor.black.cgColor
+        panel.layer.shadowOpacity = 0.24
+        panel.layer.shadowRadius = 8
+        panel.layer.shadowOffset = CGSize(width: 0, height: 5)
         panel.translatesAutoresizingMaskIntoConstraints = false
 
         let stack = UIStackView(arrangedSubviews: arrangedSubviews)
@@ -247,8 +282,12 @@ final class GameViewController: UIViewController {
     private func makeSectionTitle(_ text: String) -> UILabel {
         let label = UILabel()
         label.text = text
-        label.textColor = UIColor(red: 1, green: 0.68, blue: 0.32, alpha: 1)
-        label.font = .systemFont(ofSize: 14, weight: .heavy)
+        label.textColor = UIColor(red: 1, green: 0.91, blue: 0.43, alpha: 1)
+        label.font = .systemFont(ofSize: 16, weight: .black)
+        label.layer.shadowColor = UIColor.black.cgColor
+        label.layer.shadowOpacity = 0.3
+        label.layer.shadowRadius = 1
+        label.layer.shadowOffset = CGSize(width: 0, height: 1)
         label.textAlignment = .left
         return label
     }
@@ -261,9 +300,13 @@ final class GameViewController: UIViewController {
         button.setTitleColor(.white, for: .normal)
         button.setTitleColor(UIColor.white.withAlphaComponent(0.55), for: .disabled)
         button.backgroundColor = color
-        button.layer.cornerRadius = 13
-        button.layer.borderWidth = 1
-        button.layer.borderColor = UIColor.white.withAlphaComponent(0.08).cgColor
+        button.layer.cornerRadius = 16
+        button.layer.borderWidth = 2
+        button.layer.borderColor = UIColor.white.withAlphaComponent(0.28).cgColor
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOpacity = 0.25
+        button.layer.shadowRadius = 3
+        button.layer.shadowOffset = CGSize(width: 0, height: 4)
         button.contentEdgeInsets = UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
         button.titleLabel?.adjustsFontSizeToFitWidth = true
         button.titleLabel?.minimumScaleFactor = 0.82

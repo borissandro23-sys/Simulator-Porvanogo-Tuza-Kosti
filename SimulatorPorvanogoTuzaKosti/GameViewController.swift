@@ -386,9 +386,9 @@ final class GameViewController: UIViewController {
     }
 
     // Quadratic prices grow steadily instead of exploding exponentially.
-    private func balancedCost(base: Int, level: Int, coefficient: Int) -> Int {
-        let safeLevel = min(10_000, max(0, level))
-        return min(1_000_000_000, base + coefficient * safeLevel * safeLevel)
+    private func balancedCost(base: Float, level: Float, coefficient: Float) -> Float {
+        let safeLevel = min(10_000.0, max(0.0, level))
+        return min(1_000_000_000.0, base + coefficient * safeLevel * safeLevel)
     }
 
     private var powerCost: Float { balancedCost(base: 25, level: tapPower - 1, coefficient: 8) }
@@ -538,8 +538,8 @@ private final class AceCardView: UIView {
         suitLabel.textColor = color
     }
 
-    func setDamage(damage: Int, total: Int) {
-        let alpha = CGFloat(damage) / CGFloat(max(1, total))
+    func setDamage(damage: Float, total: Float) {
+        let alpha = CGFloat(damage / max(1.0, total))
         crackLayer.frame = card.bounds
         let path = UIBezierPath()
         path.move(to: CGPoint(x: card.bounds.midX, y: 65))

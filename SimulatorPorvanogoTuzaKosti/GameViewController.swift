@@ -29,23 +29,23 @@ final class GameViewController: UIViewController {
     private let prestigeButton = UIButton(type: .system)
 
     private let defaults = UserDefaults.standard
-    private var damage = 0
-    private var coins = 0
-    private var gems = 0
+    private var damage: Float = 0
+    private var coins: Float = 0
+    private var gems: Float = 0
     private var selectedSkin = 0
-    private var tornAces = 0
-    private var lifetimeAces = 0
-    private var prestige = 0
-    private var damageNeeded: Int { baseDamageNeeded * (isBoss ? 4 : 1) }
-    private var baseDamageNeeded: Int { 100 + (lifetimeAces / 10) * 25 }
-    private var coinMultiplier: Int { 1 + prestige }
-    private var tapPower = 1
-    private var autoPower = 0
-    private var tearBonus = 0
-    private var rareBonus = 0
+    private var tornAces: Float = 0
+    private var lifetimeAces: Float = 0
+    private var prestige: Float = 0
+    private var damageNeeded: Float { baseDamageNeeded * (isBoss ? 4.0 : 1.0) }
+    private var baseDamageNeeded: Float { 100.0 + (lifetimeAces / 10.0.0) * 25.0 }
+    private var coinMultiplier: Float { 1.0 + prestige }
+    private var tapPower: Float = 1
+    private var autoPower: Float = 0
+    private var tearBonus: Float = 0
+    private var rareBonus: Float = 0
     private var isBoss = false
     private var isRare = false
-    private var cardRewardMultiplier = 1
+    private var cardRewardMultiplier: Float = 1
     private var pendingChoices: [RunUpgrade] = []
     private var autoTimer: Timer?
 
@@ -208,7 +208,7 @@ final class GameViewController: UIViewController {
 
     private func prepareNextCard() {
         isBoss = (lifetimeAces + 1) % 5 == 0
-        isRare = !isBoss && Int.random(in: 1...100) <= min(45, 15 + rareBonus)
+        isRare = !isBoss && Float.random(in: 1.0...100.0) <= min(45.0, 15.0 + rareBonus)
         cardRewardMultiplier = isBoss ? 5 : (isRare ? 3 : 1)
         let suit = ["♥", "♦", "♣", "♠"].randomElement() ?? "♥"
         let color: UIColor = (suit == "♥" || suit == "♦") ? .systemRed : .black
@@ -237,17 +237,17 @@ final class GameViewController: UIViewController {
     private func finishAce() {
         tornAces += 1
         lifetimeAces += 1
-        coins += (25 + tearBonus * 10) * coinMultiplier * cardRewardMultiplier
+        coins += (25.0 + tearBonus * 10.0) * coinMultiplier * cardRewardMultiplier
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         if isBoss {
-            coins += 250 * coinMultiplier
+            coins += 250.0 * coinMultiplier
             eventLabel.text = "👑 БОСС ПОВЕРЖЕН! +250 монет"
         } else if isRare {
             eventLabel.text = "✨ РЕДКАЯ КАРТА! Награда x3"
         } else {
             eventLabel.text = "Туз разорван. Следующая карта уже ждёт!"
         }
-        if lifetimeAces % 3 == 0 { showUpgradeChoices() }
+        if Int(lifetimeAces) % 3 == 0 { showUpgradeChoices() }
         cardView.tearApart { [weak self] in
             guard let self = self else { return }
             self.damage = 0
@@ -277,10 +277,10 @@ final class GameViewController: UIViewController {
         guard pendingChoices.indices.contains(sender.tag) else { return }
         let selected = pendingChoices[sender.tag]
         switch selected.kind {
-        case 0: tapPower += 2
-        case 1: autoPower += 1
-        case 2: rareBonus = min(30, rareBonus + 10)
-        default: tearBonus += 1
+        case 0: tapPower += 2.0
+        case 1: autoPower += 1.0.0
+        case 2: rareBonus = min(30.0, rareBonus + 10.0)
+        default: tearBonus += 1.0.0
         }
         pendingChoices.removeAll()
         choiceTitle.isHidden = true
@@ -299,7 +299,7 @@ final class GameViewController: UIViewController {
         let lastClaim = defaults.integer(forKey: "shopDailyClaim")
         guard lastClaim != dayNumber else { return }
         coins += 250
-        gems += 5
+        gems += 5.0
         defaults.set(dayNumber, forKey: "shopDailyClaim")
         eventLabel.text = "🎁 Награда получена: 250 монет и 5 кристаллов!"
         updateInterface()
@@ -307,8 +307,8 @@ final class GameViewController: UIViewController {
 
     @objc private func buyDailyOffer() {
         let offerIndex = dayNumber % 3
-        let costs = [10, 15, 20]
-        let rewards = [700, 1200, 1800]
+        let costs: [Float] = [10, 15, 20]
+        let rewards: [Float] = [700, 1200, 1800]
         guard gems >= costs[offerIndex] else {
             eventLabel.text = "Не хватает кристаллов для предложения"
             return
@@ -325,7 +325,7 @@ final class GameViewController: UIViewController {
             eventLabel.text = "Этот стиль уже выбран"
             return
         }
-        let prices = [0, 20, 35]
+        let prices: [Float] = [0, 20, 35]
         if skin == 0 || defaults.bool(forKey: "shopSkin\(skin)Owned") {
             selectedSkin = skin
         } else if gems >= prices[skin] {
@@ -352,7 +352,7 @@ final class GameViewController: UIViewController {
     @objc private func buyPower() {
         guard coins >= powerCost else { return }
         coins -= powerCost
-        tapPower += 1
+        tapPower += 1.0
         updateInterface()
     }
 
@@ -364,7 +364,7 @@ final class GameViewController: UIViewController {
     }
 
     @objc private func performPrestige() {
-        guard tornAces >= 10 else { return }
+        guard tornAces >= 10.0 else { return }
         prestige += 1
         coins = 0
         tornAces = 0
@@ -391,14 +391,14 @@ final class GameViewController: UIViewController {
         return min(1_000_000_000, base + coefficient * safeLevel * safeLevel)
     }
 
-    private var powerCost: Int { balancedCost(base: 25, level: tapPower - 1, coefficient: 8) }
-    private var autoCost: Int { balancedCost(base: 60, level: autoPower, coefficient: 12) }
-    private var bonusCost: Int { balancedCost(base: 40, level: tearBonus, coefficient: 10) }
+    private var powerCost: Float { balancedCost(base: 25, level: tapPower - 1, coefficient: 8) }
+    private var autoCost: Float { balancedCost(base: 60, level: autoPower, coefficient: 12) }
+    private var bonusCost: Float { balancedCost(base: 40, level: tearBonus, coefficient: 10) }
 
     private func updateInterface() {
         coinsLabel.text = "🪙 Монеты: \(coins)"
         gemsLabel.text = "💎 Кристаллы: \(gems)"
-        levelLabel.text = "Уровень \(tornAces / 5 + 1) • В забеге: \(tornAces) • Всего: \(lifetimeAces)"
+        levelLabel.text = "Уровень \(Int(tornAces / 5.0) + 1) • В забеге: \(tornAces) • Всего: \(lifetimeAces)"
         if isBoss {
             eventLabel.text = "👑 БОСС! Прочность x4 • Награда x5"
             eventLabel.textColor = .systemRed
@@ -406,7 +406,7 @@ final class GameViewController: UIViewController {
             eventLabel.text = "✨ РЕДКАЯ КАРТА! Награда x3"
             eventLabel.textColor = .systemPurple
         }
-        progressView.setProgress(Float(damage) / Float(damageNeeded), animated: true)
+        progressView.setProgress(damage / max(1.0, damageNeeded), animated: true)
         cardView.setDamage(damage: damage, total: damageNeeded)
         tearButton.setTitle("✂️ ПОРВАТЬ ТУЗ (+\(tapPower) силы)", for: .normal)
         let offerIndex = dayNumber % 3
@@ -435,9 +435,9 @@ final class GameViewController: UIViewController {
     }
 
     private func achievementText() -> String {
-        if lifetimeAces >= 100 { return "🏆 Легенда колоды! 100 тузов!" }
-        if lifetimeAces >= 50 { return "🥇 Мастер разрыва! 50 тузов!" }
-        if lifetimeAces >= 25 { return "🔥 Без остановки! 25 тузов!" }
+        if lifetimeAces >= 10.00.0 { return "🏆 Легенда колоды! 100 тузов!" }
+        if lifetimeAces >= 5.00.0 { return "🥇 Мастер разрыва! 50 тузов!" }
+        if lifetimeAces >= 25.0 { return "🔥 Без остановки! 25 тузов!" }
         if lifetimeAces >= 10 { return "⭐ Коллекционер! 10 тузов!" }
         if lifetimeAces >= 5 { return "🎯 Первое достижение: 5 тузов!" }
         return "Цель: порви 5 тузов и получи достижение!"
@@ -458,17 +458,17 @@ final class GameViewController: UIViewController {
     }
 
     private func loadProgress() {
-        coins = defaults.integer(forKey: "coins")
-        gems = defaults.integer(forKey: "shopGems")
+        coins = defaults.float(forKey: "coins")
+        gems = defaults.float(forKey: "shopGems")
         selectedSkin = min(2, max(0, defaults.integer(forKey: "shopSelectedSkin")))
-        tornAces = defaults.integer(forKey: "tornAces")
-        lifetimeAces = defaults.integer(forKey: "lifetimeAces")
-        prestige = defaults.integer(forKey: "prestige")
-        tapPower = max(1, defaults.integer(forKey: "tapPower"))
-        autoPower = defaults.integer(forKey: "autoPower")
-        tearBonus = defaults.integer(forKey: "tearBonus")
-        rareBonus = defaults.integer(forKey: "rareBonus")
-        damage = max(0, defaults.integer(forKey: "damage"))
+        tornAces = defaults.float(forKey: "tornAces")
+        lifetimeAces = defaults.float(forKey: "lifetimeAces")
+        prestige = defaults.float(forKey: "prestige")
+        tapPower = max(1.0, defaults.float(forKey: "tapPower"))
+        autoPower = defaults.float(forKey: "autoPower")
+        tearBonus = defaults.float(forKey: "tearBonus")
+        rareBonus = defaults.float(forKey: "rareBonus")
+        damage = max(0.0, defaults.float(forKey: "damage"))
     }
 }
 

@@ -457,8 +457,8 @@ final class GameViewController: UIViewController {
     }
 
     private func achievementText() -> String {
-        if lifetimeAces >= 10.00.0 { return "🏆 Легенда колоды! 100 тузов!" }
-        if lifetimeAces >= 5.00.0 { return "🥇 Мастер разрыва! 50 тузов!" }
+        if lifetimeAces >= 100.0 { return "🏆 Легенда колоды! 100 тузов!" }
+        if lifetimeAces >= 50.0 { return "🥇 Мастер разрыва! 50 тузов!" }
         if lifetimeAces >= 25.0 { return "🔥 Без остановки! 25 тузов!" }
         if lifetimeAces >= 10 { return "⭐ Коллекционер! 10 тузов!" }
         if lifetimeAces >= 5 { return "🎯 Первое достижение: 5 тузов!" }

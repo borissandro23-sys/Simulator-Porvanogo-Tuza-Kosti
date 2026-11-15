@@ -37,7 +37,7 @@ final class GameViewController: UIViewController {
     private var lifetimeAces: Float = 0
     private var prestige: Float = 0
     private var damageNeeded: Float { baseDamageNeeded * (isBoss ? 4.0 : 1.0) }
-    private var baseDamageNeeded: Float { 100.0 + (lifetimeAces / 10.0.0) * 25.0 }
+    private var baseDamageNeeded: Float { 100.0 + (lifetimeAces / 10.0) * 25.0 }
     private var coinMultiplier: Float { 1.0 + prestige }
     private var tapPower: Float = 1
     private var autoPower: Float = 0

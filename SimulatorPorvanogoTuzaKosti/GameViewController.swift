@@ -1,4 +1,5 @@
 import UIKit
+import AVFoundation
 
 private struct RunUpgrade {
     let title: String
@@ -48,11 +49,13 @@ final class GameViewController: UIViewController {
     private var cardRewardMultiplier: Float = 1
     private var pendingChoices: [RunUpgrade] = []
     private var autoTimer: Timer?
+    private var tearSoundPlayer: AVAudioPlayer?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor(red: 0.07, green: 0.09, blue: 0.14, alpha: 1)
         loadProgress()
+        setupTearSound()
         prepareNextCard()
         buildInterface()
         updateInterface()
@@ -206,6 +209,24 @@ final class GameViewController: UIViewController {
         button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 12, bottom: 10, right: 12)
     }
 
+    private func setupTearSound() {
+        guard let soundURL = Bundle.main.url(forResource: "paper-tear", withExtension: "mp3") else {
+            print("⚠️ paper-tear.mp3 не найден в ресурсах приложения")
+            return
+        }
+        do {
+            tearSoundPlayer = try AVAudioPlayer(contentsOf: soundURL)
+            tearSoundPlayer?.prepareToPlay()
+        } catch {
+            print("⚠️ Не удалось загрузить звук разрыва карты: \(error)")
+        }
+    }
+
+    private func playTearSound() {
+        tearSoundPlayer?.currentTime = 0
+        tearSoundPlayer?.play()
+    }
+
     private func prepareNextCard() {
         isBoss = Int(lifetimeAces + 1.0) % 5 == 0
         isRare = !isBoss && Float.random(in: 1.0...100.0) <= min(45.0, 15.0 + rareBonus)
@@ -237,6 +258,7 @@ final class GameViewController: UIViewController {
     private func finishAce() {
         tornAces += 1
         lifetimeAces += 1
+        playTearSound()
         coins += (25.0 + tearBonus * 10.0) * coinMultiplier * cardRewardMultiplier
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         if isBoss {

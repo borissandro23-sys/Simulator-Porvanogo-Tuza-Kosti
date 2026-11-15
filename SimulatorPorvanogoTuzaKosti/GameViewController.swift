@@ -207,7 +207,7 @@ final class GameViewController: UIViewController {
     }
 
     private func prepareNextCard() {
-        isBoss = (lifetimeAces + 1) % 5 == 0
+        isBoss = Int(lifetimeAces + 1.0) % 5 == 0
         isRare = !isBoss && Float.random(in: 1.0...100.0) <= min(45.0, 15.0 + rareBonus)
         cardRewardMultiplier = isBoss ? 5 : (isRare ? 3 : 1)
         let suit = ["♥", "♦", "♣", "♠"].randomElement() ?? "♥"
@@ -278,9 +278,9 @@ final class GameViewController: UIViewController {
         let selected = pendingChoices[sender.tag]
         switch selected.kind {
         case 0: tapPower += 2.0
-        case 1: autoPower += 1.0.0
+        case 1: autoPower += 1.0
         case 2: rareBonus = min(30.0, rareBonus + 10.0)
-        default: tearBonus += 1.0.0
+        default: tearBonus += 1.0
         }
         pendingChoices.removeAll()
         choiceTitle.isHidden = true
@@ -298,7 +298,7 @@ final class GameViewController: UIViewController {
     @objc private func claimDailyReward() {
         let lastClaim = defaults.integer(forKey: "shopDailyClaim")
         guard lastClaim != dayNumber else { return }
-        coins += 250
+        coins += 250.0
         gems += 5.0
         defaults.set(dayNumber, forKey: "shopDailyClaim")
         eventLabel.text = "🎁 Награда получена: 250 монет и 5 кристаллов!"
@@ -359,16 +359,16 @@ final class GameViewController: UIViewController {
     @objc private func buyAuto() {
         guard coins >= autoCost else { return }
         coins -= autoCost
-        autoPower += 1
+        autoPower += 1.0
         updateInterface()
     }
 
     @objc private func performPrestige() {
         guard tornAces >= 10.0 else { return }
-        prestige += 1
+        prestige += 1.0
         coins = 0
         tornAces = 0
-        tapPower = 1
+        tapPower = 1.0
         autoPower = 0
         tearBonus = 0
         rareBonus = 0
@@ -381,7 +381,7 @@ final class GameViewController: UIViewController {
     @objc private func buyBonus() {
         guard coins >= bonusCost else { return }
         coins -= bonusCost
-        tearBonus += 1
+        tearBonus += 1.0
         updateInterface()
     }
 
